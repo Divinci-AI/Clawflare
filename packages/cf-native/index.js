@@ -53,7 +53,11 @@ const hooks = {
   }
 };
 
-export function register(api) {
-  api.logger.info("cf-native: registered");
-  api.on('llm_input', hooks.llm_input);
-}
+module.exports = {
+  id: 'cf-native',
+  name: 'Clawflare Native',
+  register: function(api) {
+    api.logger.info("cf-native: registered successfully");
+    api.on('llm_input', hooks.llm_input);
+  }
+};
