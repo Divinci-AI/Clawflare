@@ -54,10 +54,10 @@ The bridge holds the real Cloudflare credentials from env vars.
 
 ```bash
 export CLOUDFLARE_ACCOUNT_ID="14a6fa23390363382f378b5bd4a0f849"
-export CLOUDFLARE_API_KEY="<account-api-token-with-workers-ai-edit>"  # cfat_... prefix
+export CLOUDFLARE_API_TOKEN="<account-api-token-with-workers-ai-edit>"  # cfat_... prefix
 ```
 
-The `CLOUDFLARE_API_KEY` must be a **Cloudflare Account API Token** (not a user token, not a Global API Key) with **Workers AI → Edit** permission.
+The `CLOUDFLARE_API_TOKEN` must be a **Cloudflare Account API Token** (not a user token, not a Global API Key) with **Workers AI → Edit** permission.
 
 ## Development Workflow
 
@@ -102,6 +102,6 @@ The OpenClaw plugin hook (`llm_input`) is still registered but currently inactiv
 
 ## Security Notes
 
-- Never commit real API tokens. Credentials come from `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_KEY` env vars.
-- `CLOUDFLARE_API_KEY` must be an Account API Token (`cfat_` prefix) — rotate immediately if ever committed to git.
+- Never commit real API tokens. Credentials come from `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` env vars.
+- `CLOUDFLARE_API_TOKEN` must be an Account API Token (`cfat_` prefix) — rotate immediately if ever committed to git.
 - The bridge uses `apiKey: "bridge"` as a placeholder in openclaw.json — the real key is only in the env.

@@ -77,10 +77,10 @@ Add to `~/.zshrc` (or equivalent):
 
 ```bash
 export CLOUDFLARE_ACCOUNT_ID="your-account-id"
-export CLOUDFLARE_API_KEY="cfat_..."   # Account API Token with Workers AI → Edit permission
+export CLOUDFLARE_API_TOKEN="cfat_..."   # Account API Token with Workers AI → Edit permission
 ```
 
-`CLOUDFLARE_API_KEY` must be a **Cloudflare Account API Token** (`cfat_` prefix), not a user token or Global API Key. Create it at `dash.cloudflare.com` → Account → Account API Tokens.
+`CLOUDFLARE_API_TOKEN` must be a **Cloudflare Account API Token** (`cfat_` prefix), not a user token or Global API Key. Create it at `dash.cloudflare.com` → Account → Account API Tokens.
 
 ### 2. Install the Plugin
 

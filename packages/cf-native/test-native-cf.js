@@ -1,9 +1,9 @@
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4/accounts';
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-const API_TOKEN = process.env.CLOUDFLARE_API_KEY;
+const API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
 if (!ACCOUNT_ID || !API_TOKEN) {
-  console.error('❌ Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_KEY before running this script.');
+  console.error('❌ Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN before running this script.');
   process.exit(1);
 }
 

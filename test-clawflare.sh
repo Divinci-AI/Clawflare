@@ -5,8 +5,8 @@ set -euo pipefail
 AGENT="cf-test"
 MODEL="cf-native/@cf/moonshotai/kimi-k2.5"
 
-if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" || -z "${CLOUDFLARE_API_KEY:-}" ]]; then
-  echo "❌ CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_KEY must be set"
+if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" || -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+  echo "❌ CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN must be set"
   exit 1
 fi
 

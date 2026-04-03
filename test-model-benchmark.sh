@@ -13,7 +13,7 @@
 set -euo pipefail
 
 ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:?CLOUDFLARE_ACCOUNT_ID is required}"
-API_KEY="${CLOUDFLARE_API_KEY:?CLOUDFLARE_API_KEY is required}"
+API_KEY="${CLOUDFLARE_API_TOKEN:?CLOUDFLARE_API_TOKEN is required}"
 
 # Models to benchmark — add/remove as needed
 MODELS=(
@@ -35,7 +35,7 @@ const https = require('https');
 const flattenSchema = require('./packages/cf-native/lib/flatten-schema');
 
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-const API_KEY    = process.env.CLOUDFLARE_API_KEY;
+const API_KEY    = process.env.CLOUDFLARE_API_TOKEN;
 const BASE_URL   = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/ai/v1/chat/completions`;
 
 const MODELS = process.env.BENCHMARK_MODELS

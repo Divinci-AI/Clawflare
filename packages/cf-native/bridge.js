@@ -18,10 +18,10 @@ const https = require('https');
 const flattenSchema = require('./lib/flatten-schema');
 
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-const API_KEY = process.env.CLOUDFLARE_API_KEY;
+const API_KEY = process.env.CLOUDFLARE_API_TOKEN;
 
 if (!ACCOUNT_ID || !API_KEY) {
-  console.error('❌ Clawflare Bridge: Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_KEY');
+  console.error('❌ Clawflare Bridge: Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN');
   process.exit(1);
 }
 
