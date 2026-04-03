@@ -56,3 +56,17 @@ Cloudflare's AI Workers API has strict validation rules for JSON schemas in tool
 
 ---
 Built with 🖤 by [Divinci AI](https://github.com/Divinci-AI)
+
+## 🌐 OpenRouter / Claude 3.5 Sonnet (High Reliability)
+
+If Cloudflare Native models struggle with complex tool schemas, Claude 3.5 Sonnet via OpenRouter has been verified to work 100% with the OpenClaw browser tool.
+
+### Configuration
+
+```json
+"openrouter": {
+  "baseUrl": "https://openrouter.ai/api/v1",
+  "apiKey": "YOUR_OPENROUTER_KEY",
+  "api": "openai-responses"
+}
+```
