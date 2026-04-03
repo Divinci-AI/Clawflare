@@ -1,4 +1,4 @@
-# Clawflare
+# 🦞🟠 Clawflare
 
 OpenClaw bridge and plugin suite for Cloudflare's Native AI Workers (`@cf`).
 
