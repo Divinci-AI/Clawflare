@@ -1,0 +1,12 @@
+{
+  "id": "cf-native",
+  "name": "Clawflare Native",
+  "main": "index.js",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": { "type": "string" },
+      "apiToken": { "type": "string" }
+    }
+  }
+}
