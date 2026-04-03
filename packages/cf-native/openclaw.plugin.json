@@ -1,6 +1,8 @@
 {
   "id": "cf-native",
   "name": "Clawflare Native",
+  "version": "1.1.0",
+  "description": "Cloudflare Native AI Workers support — flattens JSON Schema composition keywords and sanitizes payloads for the @cf inference API",
   "main": "index.js",
   "configSchema": {
     "type": "object",

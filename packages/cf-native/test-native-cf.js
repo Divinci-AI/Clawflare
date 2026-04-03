@@ -1,18 +1,24 @@
 const CLOUDFLARE_BASE_URL = 'https://api.cloudflare.com/client/v4/accounts';
-const ACCOUNT_ID = '14a6fa23390363382f378b5bd4a0f849';
-const API_TOKEN = 'tzg7Cb0un6dX7jSP91HKV-IQQ4l_5_u-YAiP1TNN';
+const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
+const API_TOKEN = process.env.CLOUDFLARE_API_KEY;
+
+if (!ACCOUNT_ID || !API_TOKEN) {
+  console.error('❌ Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_KEY before running this script.');
+  process.exit(1);
+}
+
+const SUPPORTED_FIELDS = ['model', 'messages', 'stream', 'max_tokens', 'temperature', 'top_p', 'tools', 'tool_choice', 'response_format'];
 
 function sanitizeRequest(payload) {
-  const supportedFields = ['model', 'messages', 'stream', 'max_tokens', 'temperature', 'top_p', 'tools', 'tool_choice', 'response_format'];
   const sanitized = {};
-  for (const field of supportedFields) {
+  for (const field of SUPPORTED_FIELDS) {
     if (payload[field] !== undefined && payload[field] !== null) {
       sanitized[field] = payload[field];
     }
   }
   if (Array.isArray(sanitized.tools) && sanitized.tools.length === 0) delete sanitized.tools;
-  if (!sanitized.model.startsWith('@cf/')) {
-     sanitized.model = '@cf/' + sanitized.model;
+  if (sanitized.model && !sanitized.model.startsWith('@cf/')) {
+    sanitized.model = '@cf/' + sanitized.model;
   }
   return sanitized;
 }

@@ -1,0 +1,10 @@
+{
+  "name": "clawflare-cf-native",
+  "version": "1.1.0",
+  "description": "OpenClaw plugin for Cloudflare Native AI Workers — flattens JSON Schema composition keywords rejected by the Cloudflare inference API",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

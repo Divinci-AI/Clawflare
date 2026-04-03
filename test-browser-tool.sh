@@ -1,18 +1,43 @@
 #!/bin/bash
-AGENT="main"
+# Browser tool test — verifies kimi-k2.5 can invoke the browser tool and parse a result
+set -euo pipefail
+
+AGENT="cf-test"
 URL="https://docs.openclaw.ai/tools/browser"
-echo "Testing browser tool with AGENT: $AGENT"
+
+if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" || -z "${CLOUDFLARE_API_KEY:-}" ]]; then
+  echo "❌ CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_KEY must be set"
+  exit 1
+fi
+
+# Ensure the bridge is running
+if ! curl -sf http://127.0.0.1:18799 >/dev/null 2>&1; then
+  echo "Starting Clawflare Bridge..."
+  node "$(dirname "$0")/packages/cf-native/bridge.js" &
+  BRIDGE_PID=$!
+  sleep 2
+  trap "kill $BRIDGE_PID 2>/dev/null" EXIT
+fi
+
+echo "Testing browser tool with agent: $AGENT"
 echo "Target URL: $URL"
 
-# Capture JSON and filter out bedrock-discovery noise
-RESULT=$(openclaw agent --agent "$AGENT" --message "Use your browser tool to navigate to $URL and tell me the page title." --json 2>/dev/null | grep -v "^\[")
+RESULT=$(openclaw agent --agent "$AGENT" \
+  --message "Use your browser tool to navigate to $URL and tell me the page title." \
+  --json 2>/dev/null | grep -v "^\[")
 
-if echo "$RESULT" | grep -q "\"status\":\"ok\""; then
-    echo "✅ SUCCESS: Agent completed run."
-    # Extract the response text
-    echo "Agent Response:"
-    echo "$RESULT" | grep -o "\"text\":\"[^\"]*\"" | head -n 1 | cut -d'"' -f4
+if echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); exit(0 if d.get('status')=='ok' else 1)" 2>/dev/null; then
+  echo "✅ SUCCESS: Agent completed run."
+  PROVIDER=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('result',{}).get('meta',{}).get('agentMeta',{}).get('provider','unknown'))" 2>/dev/null)
+  echo "Provider used: $PROVIDER"
+  echo "Agent Response:"
+  echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['result']['payloads'][0]['text'][:400])" 2>/dev/null || true
+  if [[ "$PROVIDER" != "cf-native" ]]; then
+    echo "⚠️  WARNING: Expected cf-native but got $PROVIDER"
+    exit 1
+  fi
 else
-    echo "❌ FAILED"
-    echo "$RESULT" | head -n 20
+  echo "❌ FAILED"
+  echo "$RESULT" | head -20
+  exit 1
 fi

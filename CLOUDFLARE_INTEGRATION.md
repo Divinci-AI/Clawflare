@@ -16,8 +16,8 @@ Cloudflare's AI Run API and its OpenAI-compatible bridge are strictly constraine
 ### 3. Authentication & Configuration
 - **Challenge**: Encountered persistent `401 Unauthorized` errors with multiple candidate keys.
 - **Solution**: Verified multiple keys from `.zshrc` and environment files using a custom verification script (`verify-keys.sh`). 
-- **Active Working Key**: `tzg7Cb0un6dX7jSP91HKV-IQQ4l_5_u-YAiP1TNN` (Staging Token).
-- **Account ID**: `14a6fa23390363382f378b5bd4a0f849`.
+- **Active Working Key**: set via `CLOUDFLARE_API_TOKEN` env var (staging token; rotate if previously committed).
+- **Account ID**: set via `CLOUDFLARE_ACCOUNT_ID` env var.
 
 ### 4. Bridge Proxy (Architecture)
 - **Challenge**: OpenClaw's internal `openai-responses` API sometimes bypasses standard plugin hooks, preventing schema cleaning.
