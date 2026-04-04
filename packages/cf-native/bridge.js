@@ -326,10 +326,13 @@ const server = http.createServer((req, res) => {
       const outgoing = toCompletionsPayload(raw);
       const bodyStr = JSON.stringify(outgoing);
 
-      console.log(`→ CF ${outgoing.model} tools=${outgoing.tools?.length ?? 0}`);
+      const toolNames = outgoing.tools?.map(t => t.function?.name || t.type).join(',') || 'none';
+      console.log(`→ CF ${outgoing.model} tools=[${toolNames}] max_tokens=${outgoing.max_tokens ?? 'unset'}`);
 
       // Detect if OpenClaw wants streaming — if so we'll fake SSE back to it
       const wantsStream = raw.stream === true;
+
+      const TIMEOUT_MS = 60000; // 60s — reasoning models can take time
 
       const cfReq = https.request(CF_URL, {
         method: 'POST',
@@ -343,15 +346,25 @@ const server = http.createServer((req, res) => {
         cfRes.on('data', (c) => { cfBody += c; });
         cfRes.on('end', () => {
           if (cfRes.statusCode !== 200) {
-            console.error(`← CF error ${cfRes.statusCode}:`, cfBody.slice(0, 300));
+            console.error(`← CF error ${cfRes.statusCode}:`, cfBody.slice(0, 500));
             res.writeHead(cfRes.statusCode, { 'Content-Type': 'application/json' });
             res.end(cfBody);
             return;
           }
 
-          const completions = JSON.parse(cfBody);
+          let completions;
+          try {
+            completions = JSON.parse(cfBody);
+          } catch (e) {
+            console.error('← CF response JSON parse error:', e.message, cfBody.slice(0, 200));
+            res.writeHead(502);
+            res.end(JSON.stringify({ error: 'invalid JSON from Cloudflare' }));
+            return;
+          }
+
           const finishReason = completions.choices?.[0]?.finish_reason;
-          console.log(`← CF ok finish_reason=${finishReason}`);
+          const hasToolCalls = completions.choices?.[0]?.message?.tool_calls?.length > 0;
+          console.log(`← CF ok finish_reason=${finishReason} tool_calls=${hasToolCalls}`);
 
           if (wantsStream) {
             res.writeHead(200, {
@@ -369,10 +382,22 @@ const server = http.createServer((req, res) => {
         });
       });
 
+      // Timeout — prevents indefinite stall on slow CF responses
+      cfReq.setTimeout(TIMEOUT_MS, () => {
+        console.error(`← CF timeout after ${TIMEOUT_MS}ms — aborting`);
+        cfReq.destroy();
+        if (!res.headersSent) {
+          res.writeHead(504);
+          res.end(JSON.stringify({ error: `Cloudflare timeout after ${TIMEOUT_MS}ms` }));
+        }
+      });
+
       cfReq.on('error', (err) => {
         console.error('← CF request error:', err.message);
-        res.writeHead(500);
-        res.end(JSON.stringify({ error: err.message }));
+        if (!res.headersSent) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: err.message }));
+        }
       });
 
       cfReq.write(bodyStr);
