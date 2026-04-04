@@ -53,7 +53,7 @@ Run the benchmark yourself:
 ## Repository Structure
 
 ```
-packages/cf-native/
+packages/clawflare/
   bridge.js             # HTTP bridge — the active component. Runs on port 18799.
   lib/flatten-schema.js # Recursive JSON Schema flattener (shared)
   index.js              # OpenClaw plugin (llm_input hook — loaded but inactive in bridge setup)
@@ -85,14 +85,14 @@ export CLOUDFLARE_API_TOKEN="cfat_..."   # Account API Token with Workers AI →
 ### 2. Install the Plugin
 
 ```bash
-cp -r packages/cf-native ~/.openclaw/extensions/
+cp -r packages/clawflare ~/.openclaw/extensions/
 ```
 
-Add `cf-native` to `plugins.allow` in `~/.openclaw/openclaw.json`:
+Add `clawflare` to `plugins.allow` in `~/.openclaw/openclaw.json`:
 
 ```json
 "plugins": {
-  "allow": ["cf-native", "openclaw-web-search"]
+  "allow": ["clawflare", "openclaw-web-search"]
 }
 ```
 
@@ -101,26 +101,26 @@ Add `cf-native` to `plugins.allow` in `~/.openclaw/openclaw.json`:
 In `~/.openclaw/openclaw.json`, under `models.providers`:
 
 ```json
-"cf-native": {
+"clawflare": {
   "api": "openai-responses",
   "apiKey": "bridge",
   "baseUrl": "http://127.0.0.1:18799",
   "models": [
     {
       "id": "@cf/meta/llama-4-scout-17b-16e-instruct",
-      "name": "cf-native/@cf/meta/llama-4-scout-17b-16e-instruct",
+      "name": "clawflare/@cf/meta/llama-4-scout-17b-16e-instruct",
       "contextWindow": 131072,
       "maxTokens": 8192
     },
     {
       "id": "@cf/moonshotai/kimi-k2.5",
-      "name": "cf-native/@cf/moonshotai/kimi-k2.5",
+      "name": "clawflare/@cf/moonshotai/kimi-k2.5",
       "contextWindow": 131072,
       "maxTokens": 8192
     },
     {
       "id": "@cf/zai-org/glm-4.7-flash",
-      "name": "cf-native/@cf/zai-org/glm-4.7-flash",
+      "name": "clawflare/@cf/zai-org/glm-4.7-flash",
       "contextWindow": 131072,
       "maxTokens": 8192
     }
@@ -135,13 +135,13 @@ In `~/.openclaw/openclaw.json`, under `models.providers`:
 ```bash
 # Primary agent — llama-4-scout (recommended default)
 openclaw agents add cf-scout \
-  --model "cf-native/@cf/meta/llama-4-scout-17b-16e-instruct" \
+  --model "clawflare/@cf/meta/llama-4-scout-17b-16e-instruct" \
   --workspace ~/.openclaw/workspace \
   --non-interactive
 
 # Heavy reasoning agent — kimi-k2.5
 openclaw agents add cf-test \
-  --model "cf-native/@cf/moonshotai/kimi-k2.5" \
+  --model "clawflare/@cf/moonshotai/kimi-k2.5" \
   --workspace ~/.openclaw/workspace \
   --non-interactive
 ```
@@ -154,7 +154,7 @@ The bridge must be running before any OpenClaw agent test. The test scripts auto
 
 ```bash
 # Terminal 1 — start the bridge
-node packages/cf-native/bridge.js
+node packages/clawflare/bridge.js
 
 # Terminal 2 — run tests
 ./verify-keys.sh          # confirm API key is valid (no bridge needed)

@@ -32,7 +32,7 @@ echo ""
 
 node - <<'JSEOF'
 const https = require('https');
-const flattenSchema = require('./packages/cf-native/lib/flatten-schema');
+const flattenSchema = require('./packages/clawflare/lib/flatten-schema');
 
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const API_KEY    = process.env.CLOUDFLARE_API_TOKEN;

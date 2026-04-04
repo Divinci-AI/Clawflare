@@ -21,7 +21,7 @@ OpenClaw → /responses (Responses API format, flat tools)
 ## Repository Layout
 
 ```
-packages/cf-native/
+packages/clawflare/
   index.js              # OpenClaw plugin — llm_input hook (schema flattening for direct use)
   bridge.js             # HTTP bridge: Responses API ↔ Chat Completions, port 18799
   lib/flatten-schema.js # Shared recursive JSON Schema flattener (no oneOf/anyOf/allOf)
@@ -38,7 +38,7 @@ verify-keys.sh          # API key validity check
 
 **Provider** (`~/.openclaw/openclaw.json`):
 ```json
-"cf-native": {
+"clawflare": {
   "api": "openai-responses",
   "apiKey": "bridge",
   "baseUrl": "http://127.0.0.1:18799"
@@ -47,7 +47,7 @@ verify-keys.sh          # API key validity check
 The bridge holds the real Cloudflare credentials from env vars.
 
 **Agent** (`cf-test`):
-- Model: `cf-native/@cf/moonshotai/kimi-k2.5`
+- Model: `clawflare/@cf/moonshotai/kimi-k2.5`
 - Use `--agent cf-test` for all Cloudflare tests
 
 ## Required Environment Variables
@@ -63,7 +63,7 @@ The `CLOUDFLARE_API_TOKEN` must be a **Cloudflare Account API Token** (not a use
 
 ```bash
 # 1. Start the bridge (required for OpenClaw agent tests)
-node packages/cf-native/bridge.js
+node packages/clawflare/bridge.js
 
 # 2. In another terminal — run tests
 ./test-tool-schema.sh   # validates flattenSchema + Cloudflare tool acceptance (no bridge needed)

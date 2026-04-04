@@ -13,7 +13,7 @@ fi
 # Ensure the bridge is running
 if ! curl -sf http://127.0.0.1:18799 >/dev/null 2>&1; then
   echo "Starting Clawflare Bridge..."
-  node "$(dirname "$0")/packages/cf-native/bridge.js" &
+  node "$(dirname "$0")/packages/clawflare/bridge.js" &
   BRIDGE_PID=$!
   sleep 2
   trap "kill $BRIDGE_PID 2>/dev/null" EXIT
@@ -32,8 +32,8 @@ if echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); exit(0 
   echo "Provider used: $PROVIDER"
   echo "Agent Response:"
   echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['result']['payloads'][0]['text'][:400])" 2>/dev/null || true
-  if [[ "$PROVIDER" != "cf-native" ]]; then
-    echo "⚠️  WARNING: Expected cf-native but got $PROVIDER"
+  if [[ "$PROVIDER" != "clawflare" ]]; then
+    echo "⚠️  WARNING: Expected clawflare but got $PROVIDER"
     exit 1
   fi
 else

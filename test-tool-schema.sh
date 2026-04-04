@@ -16,7 +16,7 @@ echo ""
 
 # Run schema flattening on a complex payload via the shared lib, then POST to Cloudflare
 node - <<'EOF'
-const flattenSchema = require('./packages/cf-native/lib/flatten-schema');
+const flattenSchema = require('./packages/clawflare/lib/flatten-schema');
 const https = require('https');
 
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;

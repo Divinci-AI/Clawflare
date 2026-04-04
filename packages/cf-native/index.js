@@ -4,7 +4,7 @@ const SUPPORTED_FIELDS = ['model', 'messages', 'stream', 'max_tokens', 'temperat
 
 const hooks = {
   async llm_input(event, ctx) {
-    if (ctx.provider !== 'cf-native') return;
+    if (ctx.provider !== 'clawflare') return;
     const payload = event.payload;
     const clean = {};
     for (const k of SUPPORTED_FIELDS) {
@@ -33,10 +33,10 @@ const hooks = {
 };
 
 module.exports = {
-  id: 'cf-native',
-  name: 'Clawflare Native',
+  id: 'clawflare',
+  name: 'Clawflare',
   register: function(api) {
-    api.logger.info('cf-native: registered successfully');
+    api.logger.info('clawflare: registered successfully');
     api.on('llm_input', hooks.llm_input);
   }
 };
