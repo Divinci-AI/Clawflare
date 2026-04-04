@@ -39,7 +39,10 @@ function flattenContent(content) {
       .map((block) => {
         if (typeof block === 'string') return block;
         if (block.type === 'text') return block.text || '';
-        if (block.type === 'image_url') return ''; // drop images — CF doesn't support them
+        if (block.type === 'image_url') {
+          console.warn('  ⚠️  image_url block dropped — Cloudflare /chat/completions does not support vision inputs');
+          return '';
+        }
         return block.text || block.content || '';
       })
       .join('');
@@ -137,6 +140,14 @@ function toCompletionsPayload(raw) {
   // Translate Responses API fields to Chat Completions fields
   if (!payload.messages && payload.input !== undefined) {
     payload.messages = toMessages(payload.input);
+  }
+  // Responses API top-level `instructions` field = system prompt.
+  // Prepend as a system message if not already present in messages.
+  if (payload.instructions && Array.isArray(payload.messages)) {
+    const hasSystem = payload.messages.some(m => m.role === 'system');
+    if (!hasSystem) {
+      payload.messages = [{ role: 'system', content: payload.instructions }, ...payload.messages];
+    }
   }
   if (payload.max_output_tokens && !payload.max_tokens) {
     payload.max_tokens = payload.max_output_tokens;
