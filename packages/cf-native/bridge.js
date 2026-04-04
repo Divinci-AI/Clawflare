@@ -79,11 +79,18 @@ function toMessages(input) {
       // OpenClaw may encode call_id as "call_abc|fc_abc" (its internal format).
       // Cloudflare only needs the actual call ID before the pipe.
       const toolCallId = (item.call_id || '').split('|')[0] || item.call_id;
-      messages.push({
-        role: 'tool',
-        tool_call_id: toolCallId,
-        content: typeof item.output === 'string' ? item.output : JSON.stringify(item.output ?? '')
-      });
+      // Truncate large tool outputs (e.g. browser HTML dumps) — they can be 50KB+.
+      // kimi-k2.5 with 20k tokens of browser output in context exhausts its reasoning
+      // budget before producing any actual reply, causing a silent empty response.
+      const MAX_TOOL_OUTPUT = 12000;
+      const rawOutput = typeof item.output === 'string' ? item.output : JSON.stringify(item.output ?? '');
+      const content = rawOutput.length > MAX_TOOL_OUTPUT
+        ? rawOutput.slice(0, MAX_TOOL_OUTPUT) + `\n[... truncated ${rawOutput.length - MAX_TOOL_OUTPUT} chars]`
+        : rawOutput;
+      if (rawOutput.length > MAX_TOOL_OUTPUT) {
+        console.log(`  ↳ tool output truncated: ${rawOutput.length} → ${MAX_TOOL_OUTPUT} chars`);
+      }
+      messages.push({ role: 'tool', tool_call_id: toolCallId, content });
     } else {
       // Regular role+content message
       flushToolCalls();
@@ -147,6 +154,16 @@ function toCompletionsPayload(raw) {
   // Ensure @cf/ model prefix
   if (clean.model && !clean.model.startsWith('@cf/')) {
     clean.model = '@cf/' + clean.model;
+  }
+
+  // Reasoning models (kimi-k2.5, glm-4) spend tokens on an internal thinking phase
+  // before producing visible output. If max_tokens is too low they exhaust the budget
+  // during reasoning and return an empty message (finish_reason: "length") with no
+  // content — which looks like a stall to the user. Enforce a safe minimum.
+  const isReasoningModel = clean.model?.includes('kimi') || clean.model?.includes('glm-4');
+  const MIN_REASONING_TOKENS = 4096;
+  if (isReasoningModel && (!clean.max_tokens || clean.max_tokens < MIN_REASONING_TOKENS)) {
+    clean.max_tokens = MIN_REASONING_TOKENS;
   }
 
   // Wrap and flatten all tools (also handle tools from original raw payload in case
@@ -369,6 +386,9 @@ const server = http.createServer((req, res) => {
           const finishReason = completions.choices?.[0]?.finish_reason;
           const hasToolCalls = completions.choices?.[0]?.message?.tool_calls?.length > 0;
           console.log(`← CF ok finish_reason=${finishReason} tool_calls=${hasToolCalls}`);
+          if (finishReason === 'length') {
+            console.warn('  ⚠️  finish_reason=length — model hit max_tokens mid-reasoning. Response may be empty.');
+          }
 
           if (wantsStream) {
             res.writeHead(200, {
