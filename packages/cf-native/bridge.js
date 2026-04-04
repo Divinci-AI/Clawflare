@@ -50,6 +50,42 @@ function flattenContent(content) {
   return String(content || '');
 }
 
+// OpenClaw injects periodic heartbeat instructions as user messages:
+//   "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly..."
+// kimi-k2.5 can't execute this (the file is in OpenClaw's workspace, not CF) and
+// returns empty content. Strip it — it's an OpenClaw-internal housekeeping message.
+const HEARTBEAT_RE = /^Read HEARTBEAT\.md if it exists/i;
+
+// OpenClaw wraps user messages in a metadata envelope:
+//   Sender (untrusted metadata):
+//   ```json
+//   { "label": "openclaw-tui", ... }
+//   ```
+//   [Sat 2026-04-04 01:11 PDT] actual user message here
+//
+// Models like kimi-k2.5 see this as an internal protocol message and return
+// empty content (finish_reason=stop, no text) — causing a silent stall.
+// This function extracts just the actual user message after the JSON block.
+function unwrapMetadata(content) {
+  if (typeof content !== 'string') return content;
+  if (HEARTBEAT_RE.test(content.trim())) {
+    console.log('  ↳ heartbeat message stripped');
+    return null; // caller should skip this message
+  }
+  if (!content.includes('(untrusted metadata)')) return content;
+  // Split on ``` — the actual message is after the last closing ```
+  const parts = content.split('```');
+  if (parts.length < 3) return content;
+  const afterBlock = parts[parts.length - 1];
+  // Strip leading whitespace and optional timestamp [Day YYYY-MM-DD HH:MM TZ]
+  const actual = afterBlock.replace(/^\s+/, '').replace(/^\[.*?\]\s*/, '').trim();
+  if (actual) {
+    console.log(`  ↳ metadata envelope unwrapped: "${actual.slice(0, 80)}"`);
+    return actual;
+  }
+  return content;
+}
+
 function toMessages(input) {
   if (!input) return [];
   if (typeof input === 'string') return [{ role: 'user', content: input }];
@@ -68,7 +104,8 @@ function toMessages(input) {
   for (const item of input) {
     if (typeof item === 'string') {
       flushToolCalls();
-      messages.push({ role: 'user', content: item });
+      const c = unwrapMetadata(item);
+      if (c !== null) messages.push({ role: 'user', content: c });
     } else if (item.type === 'function_call') {
       // Responses API sends consecutive tool calls as separate items; Chat Completions
       // batches them into a single assistant message with tool_calls[].
@@ -97,7 +134,9 @@ function toMessages(input) {
     } else {
       // Regular role+content message
       flushToolCalls();
-      messages.push({ role: item.role || 'user', content: flattenContent(item.content) });
+      const rawContent = flattenContent(item.content);
+      const content = (item.role === 'user' || !item.role) ? unwrapMetadata(rawContent) : rawContent;
+      if (content !== null) messages.push({ role: item.role || 'user', content });
     }
   }
 
@@ -165,6 +204,25 @@ function toCompletionsPayload(raw) {
   // Ensure @cf/ model prefix
   if (clean.model && !clean.model.startsWith('@cf/')) {
     clean.model = '@cf/' + clean.model;
+  }
+
+  // Context window guard — very long conversations cause nondeterministic behavior
+  // in reasoning models (108 messages → 30k tokens → kimi returns empty unpredictably).
+  // Keep: all system messages + last MAX_RECENT non-system messages.
+  // Tool call / tool output pairs are preserved by keeping an even window.
+  if (Array.isArray(clean.messages) && clean.messages.length > 0) {
+    const MAX_RECENT = 40;
+    const system = clean.messages.filter(m => m.role === 'system');
+    const nonSystem = clean.messages.filter(m => m.role !== 'system');
+    if (nonSystem.length > MAX_RECENT) {
+      const trimmed = nonSystem.slice(-MAX_RECENT);
+      // Don't start with a tool message — it references a prior assistant tool_call
+      // that got cut. Advance past any leading tool messages.
+      let start = 0;
+      while (start < trimmed.length && trimmed[start].role === 'tool') start++;
+      clean.messages = [...system, ...trimmed.slice(start)];
+      console.log(`  ↳ context trimmed: ${nonSystem.length} → ${clean.messages.length - system.length} non-system msgs`);
+    }
   }
 
   // Reasoning models (kimi-k2.5, glm-4) spend tokens on an internal thinking phase
@@ -356,7 +414,18 @@ const server = http.createServer((req, res) => {
 
       const toolNames = outgoing.tools?.map(t => t.function?.name || t.type).join(',') || 'none';
       const msgCount = outgoing.messages?.length ?? 0;
-      console.log(`→ CF ${outgoing.model} msgs=${msgCount} tools=[${toolNames}] max_tokens=${outgoing.max_tokens ?? 'unset'}`);
+      // Log last message role/type to track where in the conversation we are
+      const lastMsg = outgoing.messages?.[outgoing.messages.length - 1];
+      const lastRole = lastMsg?.role || '?';
+      const lastContent = typeof lastMsg?.content === 'string' ? lastMsg.content : '[non-string]';
+      const isMetadata = lastContent.includes('untrusted metadata');
+      const logContent = isMetadata ? lastContent.slice(0, 500).replace(/\n/g, '↵') : lastContent.slice(0, 80).replace(/\n/g, ' ');
+      if (isMetadata) {
+        console.log(`→ CF ${outgoing.model} msgs=${msgCount} tools=[${toolNames}] max_tokens=${outgoing.max_tokens ?? 'unset'}`);
+        console.log(`  METADATA ENVELOPE (full):\n${lastContent.slice(0, 1000)}`);
+      } else {
+        console.log(`→ CF ${outgoing.model} msgs=${msgCount} last=${lastRole}:"${logContent}" tools=[${toolNames}] max_tokens=${outgoing.max_tokens ?? 'unset'}`);
+      }
 
       // Detect if OpenClaw wants streaming — if so we'll fake SSE back to it
       const wantsStream = raw.stream === true;
