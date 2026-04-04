@@ -327,12 +327,16 @@ const server = http.createServer((req, res) => {
       const bodyStr = JSON.stringify(outgoing);
 
       const toolNames = outgoing.tools?.map(t => t.function?.name || t.type).join(',') || 'none';
-      console.log(`→ CF ${outgoing.model} tools=[${toolNames}] max_tokens=${outgoing.max_tokens ?? 'unset'}`);
+      const msgCount = outgoing.messages?.length ?? 0;
+      console.log(`→ CF ${outgoing.model} msgs=${msgCount} tools=[${toolNames}] max_tokens=${outgoing.max_tokens ?? 'unset'}`);
 
       // Detect if OpenClaw wants streaming — if so we'll fake SSE back to it
       const wantsStream = raw.stream === true;
 
-      const TIMEOUT_MS = 60000; // 60s — reasoning models can take time
+      // Reasoning models (kimi-k2.5, glm-4.7-flash) generate a thinking phase before
+      // responding. With large contexts (30k+ tokens) this can exceed 2 minutes.
+      const isReasoning = outgoing.model?.includes('kimi') || outgoing.model?.includes('glm-4');
+      const TIMEOUT_MS = isReasoning ? 180000 : 90000; // 3 min reasoning, 90s others
 
       const cfReq = https.request(CF_URL, {
         method: 'POST',
